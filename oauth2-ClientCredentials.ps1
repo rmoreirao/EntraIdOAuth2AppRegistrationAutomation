@@ -2,9 +2,9 @@
 # https://learn.microsoft.com/en-us/entra/identity-platform/howto-call-a-web-api-with-curl?tabs=dotnet6&pivots=no-api
 
 ## Comments:
-# 1) Create the App Registration with "Graph API" permissions "Application.ReadWrite.OwnedBy"
-# 2) Create Secret for the Application and update the parameters
-# 3) 2 Applications will be created:
+# 1) Manually Create the App Registration with "Graph API" permissions "Application.ReadWrite.OwnedBy"
+# 2) Manually Create Secret for the Application and update the parameters from this script
+# 3) Execute the Script and 2 Applications will be created:
 #    - HEI DI API ProductSample: Backend API exposing 2 roles
 #    - HEI DI API ClientSample: Client API consuming the Backend API roles
 # 4) The Client API will be granted permissions to the Backend API roles
@@ -182,7 +182,18 @@ function Remove-AppRegistrationsByName {
 }
 
 
+# Define the necessary variables
+### Heineken
+# $clientId = "f95461df-460f-45e5-a521-0c181e4ca48f"
+# $clientSecret = "???????????????????????"
+# $tenantId = "66e853de-ece3-44dd-9d66-ee6bdf4159d4"
+# $ownerId = "61e52d73-b984-4c84-9861-51b1be625171" # "ADMMOREIR23@heiway.net"
 
+## Microsoft
+$clientId = "23114183-b5a8-4cf5-888b-802e09e3759a"
+$clientSecret = "???????????????????????"
+$tenantId = "4f9c4922-48df-47a5-bc62-bcb789e41b7b"
+$ownerId = "ab05cca3-00be-4302-8fc2-c1e5456b3e30" # "ADMMOREIR23@heiway.net"
 
 
 $SecuredPasswordPassword = ConvertTo-SecureString `
@@ -276,9 +287,9 @@ New-MgApplicationOwnerByRef -ApplicationId $oauthClientAppObjectId  -BodyParamet
 Write-Host "'$($ownerId)' added as an application owner to app '$($clientServicePrincipal.DisplayName)'"
 
 # Get a 6 months application key for the client Application
-$fromDate = [DateTime]::Now;
-$key = CreateAppKey -fromDate $fromDate -durationInMonths 6
-$secret = Add-MgApplicationPassword -ApplicationId $oauthClientAppObjectId -PasswordCredential $key
+# $fromDate = [DateTime]::Now;
+# $key = CreateAppKey -fromDate $fromDate -durationInMonths 6
+$secret = Add-MgApplicationPassword -ApplicationId $oauthClientAppObjectId
 $clientAppKey = $secret.SecretText
 # Output the secret value
 Write-Output "Client Secret Value: $clientAppKey"
@@ -295,8 +306,8 @@ $requiredPermission = GetRequiredPermissions -applicationDisplayName "Microsoft 
 $requiredResourcesAccess.Add($requiredPermission)
 Write-Host "Added 'service' to the RRA list."
 
-Update-MgApplication -ApplicationId $oauthClientAppObjectId -RequiredResourceAccess $requiredResourcesAccess
-Write-Host "Granted permissions."
+# Update-MgApplication -ApplicationId $oauthClientAppObjectId -RequiredResourceAccess $requiredResourcesAccess
+# Write-Host "Granted permissions."
 
 # wait 5 seconds
 Start-Sleep -Seconds 10
