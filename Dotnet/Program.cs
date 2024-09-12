@@ -12,9 +12,10 @@ using Microsoft.Graph.Models;
 // See https://aka.ms/new-console-template for more information
 Console.WriteLine("Hello, World!");
 
+// Microsoft Credentials
 var tenantId = "4f9c4922-48df-47a5-bc62-bcb789e41b7b";
 var clientId = "23114183-b5a8-4cf5-888b-802e09e3759a";
-var clientSecret = "????????????";
+var clientSecret = "{clientsecret2}";
 var ownerId = "ab05cca3-00be-4302-8fc2-c1e5456b3e30";
 
 var sampleUserId = "ab05cca3-00be-4302-8fc2-c1e5456b3e30";
@@ -28,14 +29,15 @@ var oauthBackendAppDisplayName = "HEI DI API ProductSample";
 
 RemoveAppRegistrationsByName(oauthBackendAppDisplayName);
 
+const string APP_ROLE_NAME = "API.ReadWrite";
 // Add Role "API.ReadWrite" to the App Registration
 var oauthBackendAppRole = new AppRole
 {
     AllowedMemberTypes = new List<string> { "Application" },
-    DisplayName = "API.ReadWrite",
+    DisplayName = APP_ROLE_NAME,
     Id = Guid.NewGuid(),
     Description = "Read and write access to the API",
-    Value = "API.ReadWrite",
+    Value = APP_ROLE_NAME,
     IsEnabled = true,
 };
 
@@ -107,6 +109,8 @@ var passwordSecretText = passwordCredentialResponse.SecretText;
 Console.WriteLine($"Created password credential with Secret Text: {passwordSecretText}");
 
 
+
+Console.WriteLine($"Granting permissions to the client application {oauthClientApplication.Id} to access the backend application {oauthBackendApplication.Id}");
 // Create a service principal for the client application
 var oauthClientServicePrincipal = new ServicePrincipal
 {
@@ -115,12 +119,49 @@ var oauthClientServicePrincipal = new ServicePrincipal
     Tags = [$"{sampleUserId}"],
 };
 
-oauthClientServicePrincipal = await graphClient.ServicePrincipals.PostAsync(oauthClientServicePrincipal);
 
-Console.WriteLine($"Created service principal with Object ID: {oauthClientServicePrincipal.Id}");
+oauthClientServicePrincipal = await graphClient.ServicePrincipals.PostAsync(oauthClientServicePrincipal);
 
 // sleep for 10 seconds
 System.Threading.Thread.Sleep(10000);
+
+oauthClientApplication = await graphClient.Applications[oauthClientApplication.Id].GetAsync();
+Console.WriteLine($"Created service principal with Object ID: {oauthClientServicePrincipal.Id}");
+
+foreach (var key in oauthClientApplication.PasswordCredentials)
+{
+    Console.WriteLine($"Password Credential: {key.KeyId} - {key.DisplayName} - {key.SecretText}");
+}
+
+var appRole = oauthBackendApplication.AppRoles.FirstOrDefault(role => role.DisplayName == APP_ROLE_NAME);
+
+var requiredResourceAccess = new List<RequiredResourceAccess>
+        {
+            new RequiredResourceAccess
+            {
+                ResourceAppId = oauthBackendApplication.AppId,
+                ResourceAccess = new List<ResourceAccess>
+                {
+                    new ResourceAccess
+                    {
+                        Id = appRole.Id,
+                        Type = "Role" // or "Role"
+                    }
+                }
+            }
+        };
+
+var application = new Application
+        {
+            RequiredResourceAccess = requiredResourceAccess
+        };
+
+await graphClient.Applications[oauthClientApplication.Id]
+        .PatchAsync(application);
+
+
+Console.WriteLine("Press any key to retrieve the Token...");
+Console.ReadLine();
 
 string tokenEndpoint = $"https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token";
 
