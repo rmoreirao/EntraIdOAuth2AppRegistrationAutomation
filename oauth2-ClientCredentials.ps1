@@ -262,7 +262,9 @@ Update-MgApplication -ApplicationId $oauthBackendAppObjectId -IdentifierUris @($
 
 $params = @{
     appId = $oauthBackendAppId
-	appRoleAssignmentRequired = $true
+	# Setting the app role assignment required to true to ensure that the app role assignment is required for Token generation
+    # Clients are not able to generate a token without the app role assignment
+    appRoleAssignmentRequired = $true
     tags = @("WindowsAzureActiveDirectoryIntegratedApp")
 }
 
@@ -332,14 +334,15 @@ $requiredResourcesAccess = New-Object System.Collections.Generic.List[Microsoft.
 Write-Host "Getting access from 'client' to 'service'"
 $requiredPermission = GetRequiredPermissions -applicationDisplayName $oauthBackendAppDisplayName -requiredApplicationPermissions "$roleName1|$roleName2"
 $requiredResourcesAccess.Add($requiredPermission)
-# $requiredPermission = GetRequiredPermissions -applicationDisplayName $oauthBackendAppDisplayName -requiredApplicationPermissions $roleName2
-# $requiredResourcesAccess.Add($requiredPermission)
 # $requiredPermission = GetRequiredPermissions -applicationDisplayName "Microsoft Graph" -requiredApplicationPermissions "User.Read.All"
 # $requiredResourcesAccess.Add($requiredPermission)
 Write-Host "Added 'service' to the RRA list."
 
 Update-MgApplication -ApplicationId $oauthClientAppObjectId -RequiredResourceAccess $requiredResourcesAccess
 Write-Host "Granted permissions."
+
+# Granting Admin Consent on the Permisions by creating AppRoleAssignments to the Service Principal
+Write-Host "Granting Admin Consent on the Permisions..."
 
 foreach ($resourceAccess in $requiredResourcesAccess) {
     $resourceAppId = $resourceAccess.ResourceAppId
